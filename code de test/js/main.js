@@ -69,7 +69,7 @@ function createScene() {
     pupil.material.diffuseColor =  BABYLON.Color3.Red();*/
 
     //import of the model of boat
-    //let boat = BABYLONE.MeshBuilder.ImportMeshAsync("boat", "./model/", "boat.obj", scene);
+    let boat = BABYLONE.MeshBuilder.ImportMeshAsync("boat", "./model/", "boat.obj", scene);
 
     let ground = BABYLON.MeshBuilder.CreateGround("myGround", {width: 60, height: 60}, scene);
     //console.log(ground.name);
