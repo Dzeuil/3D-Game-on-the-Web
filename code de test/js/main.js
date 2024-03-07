@@ -20,6 +20,7 @@ function startGame() {
 function createScene() {
     let scene = new BABYLON.Scene(engine);
     
+    scene.debugLayer.show();
     // background
     scene.clearColor = new BABYLON.Color3(1, 0, 1);
 

@@ -19,6 +19,7 @@ function startGame() {
     modifySettings();
 
     let boat = scene.getMeshByName("myboat");
+    //let boat2 = scene.getMeshByName("boat");
 
     engine.runRenderLoop(() => {
         let deltaTime = engine.getDeltaTime(); // remind you something ?
@@ -30,12 +31,14 @@ function startGame() {
 
 function createScene() {
     let scene = new BABYLON.Scene(engine);
+    scene.debugLayer.show();
     let ground = createGround(scene);
     let freeCamera = createFreeCamera(scene);
-
+    // show inspector
+    scene.debugLayer.show();
     createobstacle ();
     let boat = createboat(scene);
-
+    let boat2 = createboat2(scene);
     // second parameter is the target to follow
     let followCamera = createFollowCamera(scene, boat);
     scene.activeCamera = followCamera;
@@ -46,7 +49,7 @@ function createScene() {
 }
 
 function createGround(scene) {
-    const groundOptions = { width:2000, height:2000, subdivisions:20, minHeight:0, maxHeight:1000, onReady: onGroundCreated};
+    const groundOptions = { width:1000, height:1000, subdivisions:20, minHeight:0, maxHeight:1000, onReady: onGroundCreated};
     //scene is optional and defaults to the current scene
     const ground = BABYLON.MeshBuilder.CreateGroundFromHeightMap("gdhm", 'images/hmap4.png', groundOptions, scene); 
 
@@ -174,14 +177,76 @@ function createboat(scene) {
     return boat;
 }
 
+function createboat2(scene) {
+    BABYLON.SceneLoader.ImportMesh("boat", "model/", "boat.glb", scene, (newMeshes, particleSystems, skeletons) => {
+    let boat2 = newMeshes[0];
+    boat2.position = new BABYLON.Vector3(-7, 0.6, -7);
+    //boat.scaling = new BABYLON.Vector3(0.5, 0.5, 0.5);
+
+    boat2.speed = 1;
+    boat2.frontVector = new BABYLON.Vector3(0, 0, 1);
+
+    boat2.move = () => {
+        //boat.position.z += -1; // speed should be in unit/s, and depends on deltaTime !
+        // if we want to move while taking into account collision detections
+        // collision uses by default "ellipsoids"
+        let yMovement = 0;
+        if (inputStates.haut) {
+            boat2.position.y = 200;
+        } else if (boat2.position.y > 2.2) {
+            zMovement = 0;
+            yMovement = -2;
+            boat2.position.y = 0.6;
+        } 
+        //boat.moveWithCollisions(new BABYLON.Vector3(0, yMovement, zMovement));
+
+        if(inputStates.up) {
+            if(boat2.rotation.x != -0.1) {
+                boat2.rotation.x -= 0.02;
+            }
+            boat2.moveWithCollisions(boat2.frontVector.multiplyByFloats(boat2.speed, boat2.speed, boat2.speed));
+        } else {
+            boat2.rotation.x = 0;
+        }
+        if(inputStates.down) {
+            boat2.speed = 1;
+            boat2.moveWithCollisions(boat2.frontVector.multiplyByFloats(-boat2.speed, -boat2.speed, -boat2.speed));
+        } else {
+            boat2.speed = 2;
+        }
+        if(inputStates.left) {
+            if(boat2.rotation.z <= 0.1) {
+                boat2.rotation.z -= -0.02;
+            }
+            boat2.rotation.y -= 0.02;
+            boat2.frontVector = new BABYLON.Vector3(Math.sin(boat2.rotation.y), 0, Math.cos(boat2.rotation.y));
+        }
+        if(inputStates.right) {
+            if(boat2.rotation.z >= -0.1) {
+                boat2.rotation.z -= 0.02;
+            }
+            boat2.rotation.y -= -0.02;
+            boat2.frontVector = new BABYLON.Vector3(Math.sin(boat2.rotation.y), 0, Math.cos(boat2.rotation.y));
+        }
+        if(!inputStates.right && !inputStates.left){
+            boat2.rotation.z = 0;
+        }
+        if(inputStates.space) {
+            boat2.speed *= 2;
+        }
+    }
+    return boat2;
+    });    
+}
+
 var createobstacle = function (scene) {
-    let numObstacles = Math.floor(Math.random() * 1000) + 1
+    let numObstacles = Math.floor(Math.random() * 500) + 1
 
     for (let i = 0; i < numObstacles; i++) {
         let obstacle = BABYLON.MeshBuilder.CreateCylinder("cylinder", {height: 5, diameter:3},scene)
-        obstacle.position.x = getRandomInt(-900, 0);
-        obstacle.position.z = getRandomInt(-900, 0);
-    }
+        obstacle.position.x = Math.floor(Math.random() * 1000) - 500;
+        obstacle.position.z = Math.floor(Math.random() * 1000) - 500;
+    }   
 }
 
 window.addEventListener("resize", () => {
