@@ -1,8 +1,11 @@
 let canvas;
 let engine;
 let scene;
+let Player;
 // vars for handling inputs
 let inputStates = {};
+let inputStates2 = {};
+let boat2;
 
 window.onload = startGame;
 
@@ -18,13 +21,11 @@ function startGame() {
     // out of the game window)
     modifySettings();
 
-    let boat = scene.getMeshByName("myboat");
-    //let boat2 = scene.getMeshByName("boat");
+    //let boat = scene.getMeshByName("myboat");
 
     engine.runRenderLoop(() => {
-        let deltaTime = engine.getDeltaTime(); // remind you something ?
-
-        boat.move();
+        if(boat2)
+            boat2.move();
         scene.render();
     });
 }
@@ -37,11 +38,9 @@ function createScene() {
     // show inspector
     scene.debugLayer.show();
     createobstacle ();
-    let boat = createboat(scene);
-    let boat2 = createboat2(scene);
+    boat2 = createboat2(scene);
     // second parameter is the target to follow
-    let followCamera = createFollowCamera(scene, boat);
-    scene.activeCamera = followCamera;
+  
 
     createLights(scene);
  
@@ -95,8 +94,8 @@ function createFreeCamera(scene) {
 function createFollowCamera(scene, target) {
     let camera = new BABYLON.FollowCamera("boatFollowCamera", target.position, scene, target);
 
-    camera.radius = 50; // how far from the object to follow
-	camera.heightOffset = 14; // how high above the object to place the camera
+    camera.radius = 30; // how far from the object to follow
+	camera.heightOffset = 10; // how high above the object to place the camera
 	camera.rotationOffset = 180; // the viewing angle
 	camera.cameraAcceleration = .1; // how fast to move
 	camera.maxCameraSpeed = 5; // speed limit
@@ -104,139 +103,64 @@ function createFollowCamera(scene, target) {
     return camera;
 }
 
-let zMovement = 5;
-function createboat(scene) {
-    let boat = new BABYLON.MeshBuilder.CreateBox("myboat", {height:2, depth:8, width:6}, scene);
-    let boatMaterial = new BABYLON.StandardMaterial("boatMaterial", scene);
-    boatMaterial.diffuseColor = new BABYLON.Color3.White;
-    boatMaterial.emissiveColor = new BABYLON.Color3.Blue;
-    boat.material = boatMaterial;
-
-    // By default the box/boat is in 0, 0, 0, let's change that...
-    boat.position.y = 0.6;
-    boat.position.x = -7;
-    boat.position.z = 7;
-    boat.speed = 1;
-    boat.frontVector = new BABYLON.Vector3(0, 0, 1);
-
-    boat.move = () => {
-                //boat.position.z += -1; // speed should be in unit/s, and depends on
-                                 // deltaTime !
-
-        // if we want to move while taking into account collision detections
-        // collision uses by default "ellipsoids"
-
-        let yMovement = 0;
-       
-        if (inputStates.haut) {
-            boat.position.y = 200;
-        } else if (boat.position.y > 2.2) {
-            zMovement = 0;
-            yMovement = -2;
-            boat.position.y = 0.6;
-        } 
-        //boat.moveWithCollisions(new BABYLON.Vector3(0, yMovement, zMovement));
-
-        
-        if(inputStates.up) {
-            if(boat.rotation.x != -0.1) {
-                boat.rotation.x -= 0.02;
-            }
-            boat.moveWithCollisions(boat.frontVector.multiplyByFloats(boat.speed, boat.speed, boat.speed));
-        } else {
-            boat.rotation.x = 0;
-        }
-        if(inputStates.down) {
-            boat.speed = 1;
-            boat.moveWithCollisions(boat.frontVector.multiplyByFloats(-boat.speed, -boat.speed, -boat.speed));
-        } else {
-            boat.speed = 2;
-        }
-        if(inputStates.left) {
-            if(boat.rotation.z <= 0.1) {
-                boat.rotation.z -= -0.02;
-            }
-            boat.rotation.y -= 0.02;
-            boat.frontVector = new BABYLON.Vector3(Math.sin(boat.rotation.y), 0, Math.cos(boat.rotation.y));
-        }
-        if(inputStates.right) {
-            if(boat.rotation.z >= -0.1) {
-                boat.rotation.z -= 0.02;
-            }
-            boat.rotation.y -= -0.02;
-            boat.frontVector = new BABYLON.Vector3(Math.sin(boat.rotation.y), 0, Math.cos(boat.rotation.y));
-        }
-        if(!inputStates.right && !inputStates.left){
-            boat.rotation.z = 0;
-        }
-        if(inputStates.space) {
-            boat.speed *= 2;
-        }
-    }
-
-    return boat;
-}
-
 function createboat2(scene) {
-    BABYLON.SceneLoader.ImportMesh("boat", "model/", "boat.glb", scene, (newMeshes, particleSystems, skeletons) => {
-    let boat2 = newMeshes[0];
-    boat2.position = new BABYLON.Vector3(-7, 0.6, -7);
-    //boat.scaling = new BABYLON.Vector3(0.5, 0.5, 0.5);
+    BABYLON.SceneLoader.ImportMesh("", "model/", "boat.glb", scene, (newMeshes, particleSystems, skeletons) => {
+        boat2 = newMeshes[0]
+        // Set up movement variables
+        boat2.position.y = 1;
+        boat2.position.x = 0;
+        boat2.position.z = 0;
+        boat2.speed = 1;
+        boat2.rotation = new BABYLON.Vector3(0, 0, 0);
+        boat2.frontVector = new BABYLON.Vector3(0, 0, 1)
+        boat2.checkCollisions = true
 
-    boat2.speed = 1;
-    boat2.frontVector = new BABYLON.Vector3(0, 0, 1);
+        let followCamera = createFollowCamera(scene, boat2);
+        scene.activeCamera = followCamera;
 
-    boat2.move = () => {
-        //boat.position.z += -1; // speed should be in unit/s, and depends on deltaTime !
-        // if we want to move while taking into account collision detections
-        // collision uses by default "ellipsoids"
-        let yMovement = 0;
-        if (inputStates.haut) {
-            boat2.position.y = 200;
-        } else if (boat2.position.y > 2.2) {
-            zMovement = 0;
-            yMovement = -2;
-            boat2.position.y = 0.6;
-        } 
-        //boat.moveWithCollisions(new BABYLON.Vector3(0, yMovement, zMovement));
+        // Add movement code
+        boat2.move = () => {
+            // Get user input
+            let yMovement = 0;
+            let zMovement = 0;
 
-        if(inputStates.up) {
-            if(boat2.rotation.x != -0.1) {
-                boat2.rotation.x -= 0.02;
+            //boat2.moveWithCollisions(new BABYLON.Vector3(0, yMovement, zMovement));
+            
+            if(inputStates.up) {
+                boat2.rotation.x = 0.1;
+                boat2.moveWithCollisions(boat2.frontVector.multiplyByFloats(-boat2.speed, -boat2.speed, -boat2.speed));
+            } else {
+                boat2.rotation.x = 0;
             }
-            boat2.moveWithCollisions(boat2.frontVector.multiplyByFloats(boat2.speed, boat2.speed, boat2.speed));
-        } else {
-            boat2.rotation.x = 0;
-        }
-        if(inputStates.down) {
-            boat2.speed = 1;
-            boat2.moveWithCollisions(boat2.frontVector.multiplyByFloats(-boat2.speed, -boat2.speed, -boat2.speed));
-        } else {
-            boat2.speed = 2;
-        }
-        if(inputStates.left) {
-            if(boat2.rotation.z <= 0.1) {
-                boat2.rotation.z -= -0.02;
+            if(inputStates.down) {
+                boat2.speed = 1;
+                boat2.moveWithCollisions(boat2.frontVector.multiplyByFloats(boat2.speed, boat2.speed, boat2.speed));
+            } else {
+                boat2.speed = 2;
             }
-            boat2.rotation.y -= 0.02;
-            boat2.frontVector = new BABYLON.Vector3(Math.sin(boat2.rotation.y), 0, Math.cos(boat2.rotation.y));
-        }
-        if(inputStates.right) {
-            if(boat2.rotation.z >= -0.1) {
-                boat2.rotation.z -= 0.02;
+            if(inputStates.left) {
+                if(boat2.rotation.z <= 0.1) {
+                    boat2.rotation.z -= -0.02;
+                }
+                boat2.rotation.y -= 0.02;
+                boat2.frontVector = new BABYLON.Vector3(Math.sin(boat2.rotation.y), 0, Math.cos(boat2.rotation.y));
             }
-            boat2.rotation.y -= -0.02;
-            boat2.frontVector = new BABYLON.Vector3(Math.sin(boat2.rotation.y), 0, Math.cos(boat2.rotation.y));
+            if(inputStates.right) {
+                if(boat2.rotation.z >= -0.1) {
+                    boat2.rotation.z -= 0.02;
+                }
+                boat2.rotation.y -= -0.02;
+                boat2.frontVector = new BABYLON.Vector3(Math.sin(boat2.rotation.y), 0, Math.cos(boat2.rotation.y));
+            }
+            if(!inputStates.right && !inputStates.left){
+                boat2.rotation.z = 0;
+            }
+            if(inputStates.space) {
+                boat2.speed *= 2;
+            }
         }
-        if(!inputStates.right && !inputStates.left){
-            boat2.rotation.z = 0;
-        }
-        if(inputStates.space) {
-            boat2.speed *= 2;
-        }
-    }
-    return boat2;
-    });    
+    })
+    return boat2
 }
 
 var createobstacle = function (scene) {
@@ -246,6 +170,8 @@ var createobstacle = function (scene) {
         let obstacle = BABYLON.MeshBuilder.CreateCylinder("cylinder", {height: 5, diameter:3},scene)
         obstacle.position.x = Math.floor(Math.random() * 1000) - 500;
         obstacle.position.z = Math.floor(Math.random() * 1000) - 500;
+        obstacle.material = new BABYLON.StandardMaterial("groundMaterial", scene);
+        obstacle.checkCollisions = true;
     }   
 }
 
@@ -317,4 +243,3 @@ function modifySettings() {
         }
     }, false);
 }
-
